@@ -592,6 +592,16 @@
 <div id="toast"></div>
 
 <script>
+// Detecta o base path correto — funciona local E atrás do proxy do Rancher
+const BASE = (() => {
+  const p = window.location.pathname;
+  // Remove trailing slash e qualquer segmento final que não seja o proxy root
+  const match = p.match(/^(.*\/proxy)\/?/);
+  return match ? match[1] : '';
+})();
+
+const api = (path) => `${BASE}${path}`;
+
 const statusMap = {
   posted:           { label: 'Postado',              class: 'status-posted' },
   in_transit:       { label: 'Em Trânsito',          class: 'status-in_transit' },
@@ -625,7 +635,7 @@ function fmtDate(ts) {
 
 // ---- NODE INFO ----
 async function loadNodeInfo() {
-  const res = await fetch('/api/node-info');
+  const res = await fetch(api('/api/node-info'));
   const d = await res.json();
   document.getElementById('b-pod').textContent     = d.pod || '—';
   document.getElementById('b-node').textContent    = d.node || 'N/A';
@@ -659,7 +669,7 @@ async function loadNodeInfo() {
 // ---- PACKAGES ----
 async function loadPackages() {
   const grid = document.getElementById('pkg-grid');
-  const res = await fetch('/api/packages');
+  const res = await fetch(api('/api/packages'));
   const pkgs = await res.json();
   if (!pkgs.length) {
     grid.innerHTML = `<div class="empty"><div class="empty-icon">📦</div><div class="empty-text">Nenhuma encomenda encontrada.</div></div>`;
@@ -698,7 +708,7 @@ async function searchPackage() {
   const code = document.getElementById('search-input').value.trim();
   if (!code) return;
   try {
-    const res = await fetch('/api/packages/' + code);
+    const res = await fetch(api('/api/packages/' + code));
     if (!res.ok) { showToast('Código não encontrado', 'error'); return; }
     const pkg = await res.json();
     openDetailWithData(pkg);
@@ -706,7 +716,7 @@ async function searchPackage() {
 }
 
 async function openDetail(code) {
-  const res = await fetch('/api/packages/' + code);
+  const res = await fetch(api('/api/packages/' + code));
   const pkg = await res.json();
   openDetailWithData(pkg);
 }
@@ -759,7 +769,7 @@ async function createPackage() {
     weight: document.getElementById('p-weight').value || '1kg'
   };
   if (!body.sender.name || !body.recipient.name) { showToast('Preencha remetente e destinatário', 'error'); return; }
-  const res = await fetch('/api/packages', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+  const res = await fetch(api('/api/packages'), { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
   const pkg = await res.json();
   showToast('Encomenda criada: ' + pkg.code);
   openTab('list');
@@ -767,7 +777,7 @@ async function createPackage() {
 
 // ---- LOGS ----
 async function loadLogs() {
-  const res = await fetch('/api/logs');
+  const res = await fetch(api('/api/logs'));
   const logs = await res.json();
   document.getElementById('log-count').textContent = logs.length;
   const term = document.getElementById('log-terminal');
