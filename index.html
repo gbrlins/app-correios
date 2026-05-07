@@ -653,17 +653,23 @@ async function loadNodeInfo() {
     <div class="node-row"><span class="node-key">Log Lines</span><span class="node-val">${d.logLines}</span></div>
   `;
 
-  // Show migration alert if pod changed
+  // Show migration alert only when a valid previous pod differs from current
+  const currentPod = d.pod;
+  const isValidPod = (v) => v && v !== 'undefined' && v !== 'null' && v.trim() !== '';
   const lastPod = localStorage.getItem('last_pod');
-  if (lastPod && lastPod !== d.pod) {
-    const alert = document.getElementById('migration-alert');
-    alert.classList.add('visible');
-    document.getElementById('alert-body').innerHTML =
-      `Pod anterior: <strong style="color:#fb923c">${lastPod}</strong> → Pod atual: <strong style="color:#4ade80">${d.pod}</strong><br>` +
-      `Dados recuperados do volume Longhorn: ${d.packageCount} encomendas, ${d.logLines} linhas de log intactas.<br>` +
-      `Volume montado em: ${d.dataDir} (PVC: correios-data-pvc, StorageClass: longhorn)`;
+
+  if (isValidPod(currentPod)) {
+    if (isValidPod(lastPod) && lastPod !== currentPod) {
+      const alertEl = document.getElementById('migration-alert');
+      alertEl.classList.add('visible');
+      document.getElementById('alert-body').innerHTML =
+        `Pod anterior: <strong style="color:#fb923c">${lastPod}</strong> → Pod atual: <strong style="color:#4ade80">${currentPod}</strong><br>` +
+        `Dados recuperados do volume Longhorn: ${d.packageCount} encomendas, ${d.logLines} linhas de log intactas.<br>` +
+        `Volume montado em: ${d.dataDir} (PVC: correios-data-pvc, StorageClass: longhorn)`;
+    }
+    // Só persiste se o valor for válido — evita gravar "undefined" no localStorage
+    localStorage.setItem('last_pod', currentPod);
   }
-  localStorage.setItem('last_pod', d.pod);
 }
 
 // ---- PACKAGES ----
